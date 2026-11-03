@@ -54,22 +54,17 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 2. **APK 默认 53M**，因为 ML Kit 的中文 OCR 模型按 `arm64-v8a / armeabi-v7a / x86` 各打一份。
    已经用 `ndk.abiFilters = ["arm64-v8a"]` 砍到 24M。要再小就得换 PaddleOCR-ncnn 之类的轻量模型。
 
-### 这台机器上的工具链（已装好）
+### 一个可用的命令行构建方式
 
-```
-C:\AndroidDev\jdk\jdk-17.0.20.1+1         JDK 17 (Temurin)
-C:\AndroidDev\sdk                          Android SDK 36 + build-tools 36.0.0 + platform-tools
-C:\AndroidDev\gradle\gradle-8.13           Gradle 8.13
-```
-
-重编一条命令：
+没有 Android Studio 时，用命令行工具链即可（把路径换成你自己的）：
 
 ```bash
-cd /c/AndroidDev/build/RecruitOnly          # 工程副本（纯 ASCII 路径）
-JAVA_HOME=/c/AndroidDev/jdk/jdk-17.0.20.1+1 ANDROID_HOME='C:\AndroidDev\sdk' \
-  /c/AndroidDev/gradle/gradle-8.13/bin/gradle :app:assembleDebug --no-daemon
-```
+export JAVA_HOME=/path/to/jdk-17
+export ANDROID_HOME=/path/to/android-sdk       # 需要 platforms;android-36 与 build-tools;36.0.0
 
+cd /path/to/ascii-only/RecruitOnly              # 必须是纯 ASCII 路径
+$ANDROID_HOME/../gradle-8.13/bin/gradle :app:assembleDebug --no-daemon
+```
 
 ## Android 14+ / 16 的几个硬约束（代码已按此写）
 
