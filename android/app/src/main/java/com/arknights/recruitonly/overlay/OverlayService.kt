@@ -292,7 +292,7 @@ class OverlayService : Service() {
         val p = panel ?: ResultPanel(this).also { panel = it }
         if (panelVisible) return
         val params = WindowManager.LayoutParams(
-            dp(280),
+            panelWidth(p.scale),
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
@@ -303,11 +303,22 @@ class OverlayService : Service() {
             y = dp(140)
         }
         panelParams = params
-        // 面板也能拖：它经常盖住词条区，让人自己挪开
-        attachTouch(p.root, params, onTap = {}, onLongPress = {})
+        p.onClose = { hidePanel() }
+        p.onScaleChange = { scale ->
+            params.width = panelWidth(scale)
+            runCatching { windowManager.updateViewLayout(p.root, params) }
+        }
+        // 整块面板都能拖（含文字区域），拖的时候只动窗口位置
+        p.root.onMove = { dx, dy ->
+            params.x -= dx.toInt()   // END 基准：手指右移 → 距右边的距离变小
+            params.y += dy.toInt()
+            runCatching { windowManager.updateViewLayout(p.root, params) }
+        }
         windowManager.addView(p.root, params)
         panelVisible = true
     }
+
+    private fun panelWidth(scale: Float): Int = dp((280 * scale).toInt())
 
     private fun hidePanel() {
         if (!panelVisible) return
