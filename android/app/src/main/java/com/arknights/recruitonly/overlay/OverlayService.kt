@@ -291,26 +291,31 @@ class OverlayService : Service() {
     private fun showPanel() {
         val p = panel ?: ResultPanel(this).also { panel = it }
         if (panelVisible) return
+        // 用左上角作基准：放大时向右扩展，鼠标下的 A+ 不会被推走
+        val screenW = windowManager.currentWindowMetrics.bounds.width()
+        val initW = panelWidth(p.scale)
         val params = WindowManager.LayoutParams(
-            panelWidth(p.scale),
+            initW,
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT,
         ).apply {
-            gravity = Gravity.TOP or Gravity.END
-            x = dp(12)
+            gravity = Gravity.TOP or Gravity.START
+            x = (screenW - initW - dp(12)).coerceAtLeast(0)
             y = dp(140)
         }
         panelParams = params
         p.onClose = { hidePanel() }
         p.onScaleChange = { scale ->
             params.width = panelWidth(scale)
+            // 放得再宽也别越出屏幕右边
+            params.x = params.x.coerceAtMost((screenW - params.width).coerceAtLeast(0))
             runCatching { windowManager.updateViewLayout(p.root, params) }
         }
         // 整块面板都能拖（含文字区域），拖的时候只动窗口位置
         p.root.onMove = { dx, dy ->
-            params.x -= dx.toInt()   // END 基准：手指右移 → 距右边的距离变小
+            params.x += dx.toInt()
             params.y += dy.toInt()
             runCatching { windowManager.updateViewLayout(p.root, params) }
         }

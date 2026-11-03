@@ -41,6 +41,9 @@ Sniper  Ranged  Supporter  AoE  Caster
 3★ Ranged          Kroos, Ambriel · 9 candidates
 ```
 
+The panel is draggable anywhere on it (text included). Top-right buttons: `A-` / `A+` scale the
+font size (0.8×–1.6×, the window width follows), `×` collapses the panel.
+
 ## Layout
 
 ```

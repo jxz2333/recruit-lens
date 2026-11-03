@@ -128,7 +128,7 @@ internal class ResultPanel(ctx: Context) {
         root.orientation = LinearLayout.VERTICAL
         root.background = ctx.rounded(Palette.CARD, 14, Palette.CARD_STROKE)
         root.setPadding(ctx.dp(14), ctx.dp(10), ctx.dp(14), ctx.dp(12))
-        root.interactiveTop = ctx.dp(34)
+        root.interactiveTop = ctx.dp(46)
         root.addView(buildHeader(), LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
             LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -150,17 +150,16 @@ internal class ResultPanel(ctx: Context) {
         addView(chip("×") { onClose?.invoke() })
     }
 
+    /** 触摸目标至少 40dp 见方——之前按钮只有文字那么宽，手指点 A- 会误触 A+。 */
     private fun chip(text: String, onClick: () -> Unit): TextView =
-        label(context, text, 12f, Palette.MUTED).apply {
+        label(context, text, 15f, Palette.TEXT).apply {
             gravity = Gravity.CENTER
-            background = context.rounded(0x1AFFFFFF, 7)
-            setPadding(context.dp(8), context.dp(3), context.dp(8), context.dp(3))
+            background = context.rounded(0x26FFFFFF, 9)
             isClickable = true
             setOnClickListener { onClick() }
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            ).apply { leftMargin = context.dp(6) }
+            layoutParams = LinearLayout.LayoutParams(context.dp(42), context.dp(40)).apply {
+                leftMargin = context.dp(8)
+            }
         }
 
     fun setScale(next: Float) {

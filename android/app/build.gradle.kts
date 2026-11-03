@@ -12,8 +12,8 @@ android {
         applicationId = "com.arknights.recruitonly"
         minSdk = 30
         targetSdk = 36
-        versionCode = 11
-        versionName = "0.2.0"
+        versionCode = 13
+        versionName = "0.2.2"
 
         // ML Kit 的 OCR 模型按 CPU 架构各打一份，只留 arm64 能省一半体积
         ndk {
