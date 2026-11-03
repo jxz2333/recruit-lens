@@ -1,0 +1,23 @@
+# ---- Android ----
+*.iml
+.gradle/
+local.properties
+.idea/
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+
+# ---- 数据中间产物（体积大，不随仓库分发）----
+data/char_table.json
+data/*.tmp
+
+# ---- Python ----
+__pycache__/
+*.pyc
+
+# ---- 系统 ----
+.DS_Store
+Thumbs.db

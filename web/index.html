@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>明日方舟 · 公招词条计算器</title>
+<style>
+  :root{
+    --bg:#0e1116; --panel:#161a21; --panel2:#1d222b; --line:#272e3a;
+    --text:#e7ebf2; --muted:#8b94a7; --accent:#4f8cff;
+    --r6:#ff8c26; --r5:#ffd23f; --r4:#c084fc; --r3:#5b9bf8; --r1:#9aa3b2;
+    --ok:#6fcf8b; --warn:#e0a33e;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    padding:18px 14px 60px}
+  .wrap{max-width:920px;margin:0 auto}
+  h1{font-size:17px;margin:0 0 2px;letter-spacing:.3px}
+  .sub{color:var(--muted);font-size:12px;margin-bottom:16px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+  .grp{margin-bottom:12px}
+  .grp:last-child{margin-bottom:0}
+  .grp-title{font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:7px}
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .chip{border:1px solid var(--line);background:var(--panel2);color:var(--text);
+    padding:6px 11px;border-radius:999px;font-size:13px;cursor:pointer;user-select:none;
+    transition:.12s ease}
+  .chip:hover{border-color:#3a4353}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  .chip.dis{opacity:.38;cursor:not-allowed;text-decoration:line-through}
+  .bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .count{font-size:12px;color:var(--muted);margin-left:auto}
+  .count b{color:var(--text)}
+  .btn{background:var(--panel2);border:1px solid var(--line);color:var(--text);
+    padding:5px 10px;border-radius:7px;font-size:12px;cursor:pointer}
+  .btn:hover{border-color:#3a4353}
+  .best{background:linear-gradient(180deg,#1b2130,#161a21);border:1px solid #2f3a4e;
+    border-radius:12px;padding:14px;margin-bottom:12px}
+  .best-top{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
+  .best-label{font-size:11px;color:var(--muted);letter-spacing:1px}
+  .verdict{font-size:13px;font-weight:600;margin-top:6px}
+  .star{font-weight:700;font-size:20px}
+  .star small{font-size:11px;font-weight:500;color:var(--muted);margin-left:2px}
+  .row{display:flex;gap:10px;padding:9px 2px;border-top:1px solid var(--line);
+    align-items:flex-start;font-size:13px}
+  .row:first-child{border-top:none}
+  .rs{flex:0 0 46px;font-weight:700;font-size:13px}
+  .rc{flex:1;min-width:0}
+  .tags-inline{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:3px}
+  .tg{background:#232936;border:1px solid #2c3444;border-radius:5px;padding:1px 6px;
+    font-size:11.5px;color:#c3ccdb}
+  .ops{color:var(--muted);font-size:12px;word-break:break-all}
+  .ops b{color:#dfe6f2;font-weight:600}
+  .lock{display:inline-block;background:#2c3a24;border:1px solid #3f5233;color:#a8d98a;
+    font-size:10.5px;border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:1px}
+  .empty{color:var(--muted);text-align:center;padding:26px 0;font-size:13px}
+  .note{color:var(--muted);font-size:11.5px;margin-top:10px;line-height:1.6}
+  .note code{background:#20252f;padding:1px 4px;border-radius:3px;font-size:11px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>公招词条计算器</h1>
+  <div class="sub">勾选识别到的词条（最多 5 个），给出所有组合的保底星级。组合最多 3 个词条，与游戏内限制一致</div>
+
+  <div class="panel">
+    <div class="bar" style="margin-bottom:12px">
+      <button class="btn" id="demo">示例</button>
+      <button class="btn" id="clear">清空</button>
+      <span class="count">已选 <b id="n">0</b> / 5</span>
+    </div>
+    <div id="groups"></div>
+  </div>
+
+  <div id="out"></div>
+
+  <div class="note">
+    数据：163 名公招池干员 / 31 词条。来源 PRTS 公招池 ∪ 游戏角色数据表，与 MAA 自带数据三源交叉校验，<b>0 处不一致</b>。
+    公招池自 2021-09 起未再扩充（PRTS 的 char_obtain 里仍是这批人），所以这份数据不是"过期"，而是池子本身没变。
+  </div>
+</div>
+
+<script id="recruit-data" type="application/json">{"operators":[{"id":"char_285_medic2","name":"Lancet-2","rarity":1,"tags":["医疗干员","支援机械","治疗","远程位"]},{"id":"char_286_cast3","name":"Castle-3","rarity":1,"tags":["支援","支援机械","近卫干员","近战位"]},{"id":"char_376_therex","name":"THRM-EX","rarity":1,"tags":["支援机械","爆发","特种干员","近战位"]},{"id":"char_4000_jnight","name":"正义骑士号","rarity":1,"tags":["支援","支援机械","狙击干员","远程位"]},{"id":"char_4093_frston","name":"Friston-3","rarity":1,"tags":["支援机械","近战位","重装干员","防护"]},{"id":"char_4136_phonor","name":"PhonoR-0","rarity":1,"tags":["元素","支援机械","辅助干员","远程位"]},{"id":"char_4188_confes","name":"CONFESS-47","rarity":1,"tags":["先锋干员","控场","支援机械","近战位"]},{"id":"char_4227_gallus","name":"GALLUS²","rarity":1,"tags":["削弱","支援机械","术师干员","远程位"]},{"id":"char_009_12fce","name":"12F","rarity":2,"tags":["新手","术师干员","远程位"]},{"id":"char_500_noirc","name":"黑角","rarity":2,"tags":["新手","近战位","重装干员"]},{"id":"char_501_durin","name":"杜林","rarity":2,"tags":["新手","术师干员","远程位"]},{"id":"char_502_nblade","name":"夜刀","rarity":2,"tags":["先锋干员","新手","近战位"]},{"id":"char_503_rang","name":"巡林者","rarity":2,"tags":["新手","狙击干员","远程位"]},{"id":"char_120_hibisc","name":"芙蓉","rarity":3,"tags":["医疗干员","治疗","远程位"]},{"id":"char_121_lava","name":"炎熔","rarity":3,"tags":["术师干员","群攻","远程位"]},{"id":"char_122_beagle","name":"米格鲁","rarity":3,"tags":["近战位","重装干员","防护"]},{"id":"char_123_fang","name":"芬","rarity":3,"tags":["先锋干员","费用回复","近战位"]},{"id":"char_124_kroos","name":"克洛丝","rarity":3,"tags":["狙击干员","输出","远程位"]},{"id":"char_192_falco","name":"翎羽","rarity":3,"tags":["先锋干员","费用回复","输出","近战位"]},{"id":"char_208_melan","name":"玫兰莎","rarity":3,"tags":["生存","输出","近卫干员","近战位"]},{"id":"char_210_stward","name":"史都华德","rarity":3,"tags":["术师干员","输出","远程位"]},{"id":"char_211_adnach","name":"安德切尔","rarity":3,"tags":["狙击干员","输出","远程位"]},{"id":"char_212_ansel","name":"安赛尔","rarity":3,"tags":["医疗干员","治疗","远程位"]},{"id":"char_240_wyvern","name":"香草","rarity":3,"tags":["先锋干员","费用回复","近战位"]},{"id":"char_278_orchid","name":"梓兰","rarity":3,"tags":["减速","辅助干员","远程位"]},{"id":"char_281_popka","name":"泡普卡","rarity":3,"tags":["生存","群攻","近卫干员","近战位"]},{"id":"char_282_catap","name":"空爆","rarity":3,"tags":["狙击干员","群攻","远程位"]},{"id":"char_283_midn","name":"月见夜","rarity":3,"tags":["输出","近卫干员","近战位"]},{"id":"char_284_spot","name":"斑点","rarity":3,"tags":["治疗","近战位","重装干员","防护"]},{"id":"char_109_fmout","name":"远山","rarity":4,"tags":["术师干员","群攻","远程位"]},{"id":"char_117_myrrh","name":"末药","rarity":4,"tags":["医疗干员","治疗","远程位"]},{"id":"char_118_yuki","name":"白雪","rarity":4,"tags":["减速","狙击干员","群攻","远程位"]},{"id":"char_126_shotst","name":"流星","rarity":4,"tags":["削弱","狙击干员","输出","远程位"]},{"id":"char_127_estell","name":"艾丝黛尔","rarity":4,"tags":["生存","群攻","近卫干员","近战位"]},{"id":"char_130_doberm","name":"杜宾","rarity":4,"tags":["支援","输出","近卫干员","近战位"]},{"id":"char_133_mm","name":"梅","rarity":4,"tags":["减速","狙击干员","输出","远程位"]},{"id":"char_137_brownb","name":"猎蜂","rarity":4,"tags":["输出","近卫干员","近战位"]},{"id":"char_141_nights","name":"夜烟","rarity":4,"tags":["削弱","术师干员","输出","远程位"]},{"id":"char_149_scave","name":"清道夫","rarity":4,"tags":["先锋干员","费用回复","输出","近战位"]},{"id":"char_150_snakek","name":"蛇屠箱","rarity":4,"tags":["近战位","重装干员","防护"]},{"id":"char_151_myrtle","name":"桃金娘","rarity":4,"tags":["先锋干员","治疗","费用回复","近战位"]},{"id":"char_181_flower","name":"调香师","rarity":4,"tags":["医疗干员","治疗","远程位"]},{"id":"char_183_skgoat","name":"地灵","rarity":4,"tags":["减速","辅助干员","远程位"]},{"id":"char_185_frncat","name":"慕斯","rarity":4,"tags":["输出","近卫干员","近战位"]},{"id":"char_190_clour","name":"红云","rarity":4,"tags":["狙击干员","输出","远程位"]},{"id":"char_193_frostl","name":"霜叶","rarity":4,"tags":["减速","输出","近卫干员","近战位"]},{"id":"char_196_sunbr","name":"古米","rarity":4,"tags":["治疗","近战位","重装干员","防护"]},{"id":"char_199_yak","name":"角峰","rarity":4,"tags":["近战位","重装干员","防护"]},{"id":"char_235_jesica","name":"杰西卡","rarity":4,"tags":["狙击干员","生存","输出","远程位"]},{"id":"char_236_rope","name":"暗索","rarity":4,"tags":["位移","特种干员","近战位"]},{"id":"char_237_gravel","name":"砾","rarity":4,"tags":["快速复活","特种干员","近战位","防护"]},{"id":"char_253_greyy","name":"格雷伊","rarity":4,"tags":["减速","术师干员","群攻","远程位"]},{"id":"char_258_podego","name":"波登可","rarity":4,"tags":["减速","治疗","辅助干员","远程位"]},{"id":"char_271_spikes","name":"芳汀","rarity":4,"tags":["输出","近卫干员","近战位"]},{"id":"char_272_strong","name":"孑","rarity":4,"tags":["快速复活","特种干员","输出","近战位"]},{"id":"char_277_sqrrel","name":"阿消","rarity":4,"tags":["位移","特种干员","近战位"]},{"id":"char_289_gyuki","name":"缠丸","rarity":4,"tags":["生存","输出","近卫干员","近战位"]},{"id":"char_290_vigna","name":"红豆","rarity":4,"tags":["先锋干员","费用回复","输出","近战位"]},{"id":"char_298_susuro","name":"苏苏洛","rarity":4,"tags":["医疗干员","治疗","远程位"]},{"id":"char_301_cutter","name":"刻刀","rarity":4,"tags":["爆发","输出","近卫干员","近战位"]},{"id":"char_302_glaze","name":"安比尔","rarity":4,"tags":["减速","狙击干员","输出","远程位"]},{"id":"char_328_cammou","name":"卡达","rarity":4,"tags":["控场","术师干员","输出","远程位"]},{"id":"char_337_utage","name":"宴","rarity":4,"tags":["生存","输出","近卫干员","近战位"]},{"id":"char_347_jaksel","name":"杰克","rarity":4,"tags":["输出","近卫干员","近战位"]},{"id":"char_366_acdrop","name":"酸糖","rarity":4,"tags":["狙击干员","输出","远程位"]},{"id":"char_381_bubble","name":"泡泡","rarity":4,"tags":["近战位","重装干员","防护"]},{"id":"char_385_finlpp","name":"清流","rarity":4,"tags":["医疗干员","支援","治疗","远程位"]},{"id":"char_440_pinecn","name":"松果","rarity":4,"tags":["狙击干员","群攻","输出","远程位"]},{"id":"char_452_bstalk","name":"豆苗","rarity":4,"tags":["先锋干员","召唤","费用回复","远程位"]},{"id":"char_469_indigo","name":"深靛","rarity":4,"tags":["控场","术师干员","输出","远程位"]},{"id":"char_484_robrta","name":"罗比菈塔","rarity":4,"tags":["支援","辅助干员","近战位","防护"]},{"id":"char_102_texas","name":"德克萨斯","rarity":5,"tags":["先锋干员","控场","费用回复","资深干员","近战位"]},{"id":"char_107_liskam","name":"雷蛇","rarity":5,"tags":["资深干员","输出","近战位","重装干员","防护"]},{"id":"char_108_silent","name":"赫默","rarity":5,"tags":["医疗干员","治疗","资深干员","远程位"]},{"id":"char_115_headbr","name":"凛冬","rarity":5,"tags":["先锋干员","支援","费用回复","资深干员","近战位"]},{"id":"char_128_plosis","name":"白面鸮","rarity":5,"tags":["医疗干员","支援","治疗","资深干员","远程位"]},{"id":"char_129_bluep","name":"蓝毒","rarity":5,"tags":["狙击干员","资深干员","输出","远程位"]},{"id":"char_143_ghost","name":"幽灵鲨","rarity":5,"tags":["生存","群攻","资深干员","近卫干员","近战位"]},{"id":"char_144_red","name":"红","rarity":5,"tags":["快速复活","控场","特种干员","资深干员","近战位"]},{"id":"char_145_prove","name":"普罗旺斯","rarity":5,"tags":["狙击干员","资深干员","输出","远程位"]},{"id":"char_148_nearl","name":"临光","rarity":5,"tags":["治疗","资深干员","近战位","重装干员","防护"]},{"id":"char_155_tiger","name":"因陀罗","rarity":5,"tags":["生存","资深干员","输出","近卫干员","近战位"]},{"id":"char_158_milu","name":"守林人","rarity":5,"tags":["爆发","狙击干员","资深干员","输出","远程位"]},{"id":"char_163_hpsts","name":"火神","rarity":5,"tags":["生存","资深干员","输出","近战位","重装干员","防护"]},{"id":"char_164_nightm","name":"夜魔","rarity":5,"tags":["减速","术师干员","治疗","资深干员","输出","远程位"]},{"id":"char_171_bldsk","name":"华法琳","rarity":5,"tags":["医疗干员","支援","治疗","资深干员","远程位"]},{"id":"char_173_slchan","name":"崖心","rarity":5,"tags":["位移","特种干员","资深干员","输出","近战位"]},{"id":"char_174_slbell","name":"初雪","rarity":5,"tags":["削弱","资深干员","辅助干员","远程位"]},{"id":"char_195_glassb","name":"真理","rarity":5,"tags":["减速","资深干员","辅助干员","输出","远程位"]},{"id":"char_201_moeshd","name":"可颂","rarity":5,"tags":["位移","资深干员","近战位","重装干员","防护"]},{"id":"char_204_platnm","name":"白金","rarity":5,"tags":["狙击干员","资深干员","输出","远程位"]},{"id":"char_214_kafka","name":"卡夫卡","rarity":5,"tags":["快速复活","控场","特种干员","资深干员","近战位"]},{"id":"char_215_mantic","name":"狮蝎","rarity":5,"tags":["特种干员","生存","资深干员","输出","近战位"]},{"id":"char_218_cuttle","name":"安哲拉","rarity":5,"tags":["减速","狙击干员","资深干员","输出","远程位"]},{"id":"char_219_meteo","name":"陨星","rarity":5,"tags":["削弱","狙击干员","群攻","资深干员","远程位"]},{"id":"char_226_hmau","name":"吽","rarity":5,"tags":["治疗","资深干员","近战位","重装干员","防护"]},{"id":"char_241_panda","name":"食铁兽","rarity":5,"tags":["位移","减速","特种干员","资深干员","近战位"]},{"id":"char_242_otter","name":"梅尔","rarity":5,"tags":["召唤","控场","资深干员","辅助干员","远程位"]},{"id":"char_243_waaifu","name":"槐琥","rarity":5,"tags":["削弱","快速复活","特种干员","资深干员","近战位"]},{"id":"char_254_vodfox","name":"巫恋","rarity":5,"tags":["削弱","资深干员","辅助干员","远程位"]},{"id":"char_261_sddrag","name":"苇草","rarity":5,"tags":["先锋干员","费用回复","资深干员","输出","近战位"]},{"id":"char_274_astesi","name":"星极","rarity":5,"tags":["资深干员","输出","近卫干员","近战位","防护"]},{"id":"char_279_excu","name":"送葬人","rarity":5,"tags":["狙击干员","群攻","资深干员","远程位"]},{"id":"char_294_ayer","name":"断崖","rarity":5,"tags":["群攻","资深干员","输出","近卫干员","近战位"]},{"id":"char_306_leizi","name":"惊蛰","rarity":5,"tags":["术师干员","资深干员","输出","远程位"]},{"id":"char_308_swire","name":"诗怀雅","rarity":5,"tags":["支援","资深干员","输出","近卫干员","近战位"]},{"id":"char_326_glacus","name":"格劳克斯","rarity":5,"tags":["减速","控场","资深干员","辅助干员","远程位"]},{"id":"char_338_iris","name":"爱丽丝","rarity":5,"tags":["术师干员","资深干员","输出","远程位"]},{"id":"char_343_tknogi","name":"月禾","rarity":5,"tags":["支援","生存","资深干员","辅助干员","远程位"]},{"id":"char_344_beewax","name":"蜜蜡","rarity":5,"tags":["术师干员","群攻","资深干员","远程位","防护"]},{"id":"char_346_aosta","name":"奥斯塔","rarity":5,"tags":["狙击干员","群攻","资深干员","远程位"]},{"id":"char_349_chiave","name":"贾维","rarity":5,"tags":["先锋干员","费用回复","资深干员","输出","近战位"]},{"id":"char_356_broca","name":"布洛卡","rarity":5,"tags":["生存","群攻","资深干员","近卫干员","近战位"]},{"id":"char_363_toddi","name":"熔泉","rarity":5,"tags":["狙击干员","资深干员","输出","远程位"]},{"id":"char_365_aprl","name":"四月","rarity":5,"tags":["狙击干员","资深干员","输出","远程位"]},{"id":"char_367_swllow","name":"灰喉","rarity":5,"tags":["狙击干员","资深干员","输出","远程位"]},{"id":"char_373_lionhd","name":"莱恩哈特","rarity":5,"tags":["术师干员","爆发","群攻","资深干员","远程位"]},{"id":"char_378_asbest","name":"石棉","rarity":5,"tags":["资深干员","输出","近战位","重装干员","防护"]},{"id":"char_379_sesa","name":"慑砂","rarity":5,"tags":["削弱","狙击干员","群攻","资深干员","远程位"]},{"id":"char_401_elysm","name":"极境","rarity":5,"tags":["先锋干员","支援","费用回复","资深干员","近战位"]},{"id":"char_415_flint","name":"燧石","rarity":5,"tags":["资深干员","输出","近卫干员","近战位"]},{"id":"char_421_crow","name":"羽毛笔","rarity":5,"tags":["资深干员","输出","近卫干员","近战位"]},{"id":"char_436_whispr","name":"絮雨","rarity":5,"tags":["医疗干员","治疗","资深干员","远程位"]},{"id":"char_455_nothin","name":"乌有","rarity":5,"tags":["快速复活","特种干员","资深干员","输出","近战位"]},{"id":"char_473_mberry","name":"桑葚","rarity":5,"tags":["医疗干员","治疗","资深干员","远程位"]},{"id":"char_475_akafyu","name":"赤冬","rarity":5,"tags":["生存","资深干员","输出","近卫干员","近战位"]},{"id":"char_478_kirara","name":"绮良","rarity":5,"tags":["特种干员","生存","资深干员","输出","近战位"]},{"id":"char_003_kalts","name":"凯尔希","rarity":6,"tags":["医疗干员","召唤","治疗","远程位","高级资深干员"]},{"id":"char_010_chen","name":"陈","rarity":6,"tags":["爆发","输出","近卫干员","近战位","高级资深干员"]},{"id":"char_017_huang","name":"煌","rarity":6,"tags":["生存","输出","近卫干员","近战位","高级资深干员"]},{"id":"char_103_angel","name":"能天使","rarity":6,"tags":["狙击干员","输出","远程位","高级资深干员"]},{"id":"char_112_siege","name":"推进之王","rarity":6,"tags":["先锋干员","费用回复","输出","近战位","高级资深干员"]},{"id":"char_134_ifrit","name":"伊芙利特","rarity":6,"tags":["削弱","术师干员","群攻","远程位","高级资深干员"]},{"id":"char_136_hsguma","name":"星熊","rarity":6,"tags":["输出","近战位","重装干员","防护","高级资深干员"]},{"id":"char_147_shining","name":"闪灵","rarity":6,"tags":["医疗干员","支援","治疗","远程位","高级资深干员"]},{"id":"char_172_svrash","name":"银灰","rarity":6,"tags":["支援","输出","近卫干员","近战位","高级资深干员"]},{"id":"char_179_cgbird","name":"夜莺","rarity":6,"tags":["医疗干员","支援","治疗","远程位","高级资深干员"]},{"id":"char_188_helage","name":"赫拉格","rarity":6,"tags":["生存","输出","近卫干员","近战位","高级资深干员"]},{"id":"char_197_poca","name":"早露","rarity":6,"tags":["控场","狙击干员","输出","远程位","高级资深干员"]},{"id":"char_2013_cerber","name":"刻俄柏","rarity":6,"tags":["控场","术师干员","输出","远程位","高级资深干员"]},{"id":"char_202_demkni","name":"塞雷娅","rarity":6,"tags":["支援","治疗","近战位","重装干员","防护","高级资深干员"]},{"id":"char_213_mostma","name":"莫斯提马","rarity":6,"tags":["控场","支援","术师干员","群攻","远程位","高级资深干员"]},{"id":"char_222_bpipe","name":"风笛","rarity":6,"tags":["先锋干员","费用回复","输出","近战位","高级资深干员"]},{"id":"char_225_haak","name":"阿","rarity":6,"tags":["支援","特种干员","输出","远程位","高级资深干员"]},{"id":"char_248_mgllan","name":"麦哲伦","rarity":6,"tags":["减速","支援","辅助干员","输出","远程位","高级资深干员"]},{"id":"char_250_phatom","name":"傀影","rarity":6,"tags":["快速复活","控场","特种干员","输出","近战位","高级资深干员"]},{"id":"char_263_skadi","name":"斯卡蒂","rarity":6,"tags":["生存","输出","近卫干员","近战位","高级资深干员"]},{"id":"char_264_f12yin","name":"山","rarity":6,"tags":["生存","输出","近卫干员","近战位","高级资深干员"]},{"id":"char_293_thorns","name":"棘刺","rarity":6,"tags":["输出","近卫干员","近战位","防护","高级资深干员"]},{"id":"char_311_mudrok","name":"泥岩","rarity":6,"tags":["生存","输出","近战位","重装干员","防护","高级资深干员"]},{"id":"char_332_archet","name":"空弦","rarity":6,"tags":["狙击干员","输出","远程位","高级资深干员"]},{"id":"char_340_shwaz","name":"黑","rarity":6,"tags":["狙击干员","输出","远程位","高级资深干员"]},{"id":"char_350_surtr","name":"史尔特尔","rarity":6,"tags":["输出","近卫干员","近战位","高级资深干员"]},{"id":"char_358_lisa","name":"铃兰","rarity":6,"tags":["减速","支援","辅助干员","输出","远程位","高级资深干员"]},{"id":"char_362_saga","name":"嵯峨","rarity":6,"tags":["先锋干员","费用回复","输出","近战位","高级资深干员"]},{"id":"char_400_weedy","name":"温蒂","rarity":6,"tags":["位移","控场","特种干员","输出","近战位","高级资深干员"]},{"id":"char_416_zumama","name":"森蚺","rarity":6,"tags":["生存","输出","近战位","重装干员","防护","高级资深干员"]},{"id":"char_423_blemsh","name":"瑕光","rarity":6,"tags":["治疗","输出","近战位","重装干员","防护","高级资深干员"]},{"id":"char_426_billro","name":"卡涅利安","rarity":6,"tags":["术师干员","群攻","远程位","防护","高级资深干员"]},{"id":"char_437_mizuki","name":"水月","rarity":6,"tags":["控场","特种干员","输出","近战位","高级资深干员"]},{"id":"char_472_pasngr","name":"异客","rarity":6,"tags":["术师干员","输出","远程位","高级资深干员"]},{"id":"char_479_sleach","name":"琴柳","rarity":6,"tags":["先锋干员","支援","费用回复","近战位","高级资深干员"]},{"id":"char_485_pallas","name":"帕拉斯","rarity":6,"tags":["支援","输出","近卫干员","近战位","高级资深干员"]}],"tags":{"高级资深干员":"高级资深干员","资深干员":"资深干员","新手":"新手","近战位":"近战位","远程位":"远程位","先锋干员":"先锋干员","近卫干员":"近卫干员","重装干员":"重装干员","狙击干员":"狙击干员","术师干员":"术师干员","医疗干员":"医疗干员","辅助干员":"辅助干员","特种干员":"特种干员","输出":"输出","防护":"防护","治疗":"治疗","支援":"支援","群攻":"群攻","生存":"生存","减速":"减速","削弱":"削弱","控场":"控场","位移":"位移","召唤":"召唤","快速复活":"快速复活","爆发":"爆发","费用回复":"费用回复","支援机械":"支援机械","元素":"元素","女性干员":"女性干员","男性干员":"男性干员"}}</script>
+<script>
+const DATA = JSON.parse(document.getElementById('recruit-data').textContent);
+const OPS = DATA.operators;
+const TAG_KEYS = Object.keys(DATA.tags);
+
+const GROUPS = [
+  {t:'稀有度词条', tags:['高级资深干员','资深干员','新手']},
+  {t:'位置',      tags:['近战位','远程位']},
+  {t:'职业',      tags:['先锋干员','近卫干员','重装干员','狙击干员','术师干员','医疗干员','辅助干员','特种干员']},
+  {t:'属性',      tags:['输出','防护','治疗','支援','群攻','生存','减速','削弱','控场','位移','召唤','快速复活','爆发','费用回复','支援机械','元素']},
+  {t:'性别（数据未收录，暂不可用）', tags:['女性干员','男性干员'], disabled:true},
+];
+
+const MAX = 5;
+const sel = new Set();
+
+const RCOLOR = r => ({6:'var(--r6)',5:'var(--r5)',4:'var(--r4)',3:'var(--r3)',2:'#4ade80',1:'var(--r1)'}[r] || 'var(--muted)');
+const STAR_CN = r => r===6?'6★':r===5?'5★':r===4?'4★':'3★';
+
+function buildChips(){
+  const host = document.getElementById('groups');
+  host.innerHTML = '';
+  for (const g of GROUPS){
+    const wrap = document.createElement('div');
+    wrap.className = 'grp';
+    wrap.innerHTML = `<div class="grp-title">${g.t}</div>`;
+    const box = document.createElement('div');
+    box.className = 'chips';
+    for (const t of g.tags){
+      if (!TAG_KEYS.includes(t)) continue;
+      const b = document.createElement('div');
+      b.className = 'chip' + (g.disabled ? ' dis' : '');
+      b.textContent = t;
+      b.dataset.tag = t;
+      if (!g.disabled) b.onclick = () => toggle(t);
+      box.appendChild(b);
+    }
+    wrap.appendChild(box);
+    host.appendChild(wrap);
+  }
+  syncChips();
+}
+
+function toggle(t){
+  if (sel.has(t)) sel.delete(t);
+  else {
+    if (sel.size >= MAX) return;
+    sel.add(t);
+  }
+  syncChips(); render();
+}
+
+function syncChips(){
+  document.querySelectorAll('.chip').forEach(c=>{
+    c.classList.toggle('on', sel.has(c.dataset.tag));
+  });
+  document.getElementById('n').textContent = sel.size;
+}
+
+const hasAll = (op, tags) => tags.every(t => op.tags.includes(t));
+
+function subsets(arr){
+  const out = [];
+  for (let m = 1; m < (1<<arr.length); m++){
+    const s = [];
+    for (let i = 0; i < arr.length; i++) if (m & (1<<i)) s.push(arr[i]);
+    out.push(s);
+  }
+  return out;
+}
+
+function render(){
+  const out = document.getElementById('out');
+  if (sel.size === 0){
+    out.innerHTML = '<div class="panel empty">勾选词条后显示推荐</div>';
+    return;
+  }
+  const chosen = [...sel];
+  const results = [];
+  for (const sub of subsets(chosen)){
+    // 游戏里「职业需求（最多3项）」，4/5 个词条的组合玩家选不出来
+    if (sub.length > 3) continue;
+    const senior = sub.includes('高级资深干员');
+    // 公招的 6★ 只能靠高级资深干员出，不勾就永远不来
+    let pool = OPS.filter(op => hasAll(op, sub) && (senior || op.rarity < 6));
+    if (!pool.length) continue;
+    // 按 9:00:00 招募算：1★/2★ 出不来，抬掉；整池都是低星时只有支援机械保留
+    if (Math.min(...pool.map(o=>o.rarity)) < 3) {
+      const lifted = pool.filter(o=>o.rarity >= 3);
+      if (lifted.length) pool = lifted;
+      else if (sub.includes('支援机械')) { /* 刷机器人，保留 1★ */ }
+      else continue;
+    }
+    const floor = Math.min(...pool.map(o=>o.rarity));
+    const ceil  = Math.max(...pool.map(o=>o.rarity));
+    const avg   = pool.reduce((s,o)=>s+o.rarity,0)/pool.length;
+    const floorOps = pool.filter(o=>o.rarity===floor).map(o=>o.name);
+    results.push({tags:sub, floor, ceil, avg, floorOps, size:pool.length});
+  }
+  results.sort((a,b)=> b.floor - a.floor || b.ceil - a.ceil || b.avg - a.avg
+                    || a.tags.length - b.tags.length);
+
+  if (!results.length){
+    out.innerHTML = '<div class="panel empty">无匹配组合 → 随机 3★</div>';
+    return;
+  }
+
+  const best = results[0];
+  const tagHtml = ts => ts.map(t=>`<span class="tg">${t}</span>`).join('');
+  const opsLine = r => r.floorOps.length === 1
+    ? `<b>${r.floorOps[0]}</b><span class="lock">锁定</span>`
+    : `${r.floorOps.slice(0,8).join('、')}${r.floorOps.length>8?` 等 ${r.floorOps.length} 名`:''}`;
+  const meta = r => r.floor < 3
+    ? `候选 ${r.size} 人 · 要把时间调短才会出`
+    : (r.floor === r.ceil
+        ? `候选 ${r.size} 人 · 全是 ${r.floor}★`
+        : `候选 ${r.size} 人 · 运气好能出 ${r.ceil}★`);
+  const verdict = best.floor >= 5 ? `可以上 · 保底 ${best.floor}★`
+    : best.floor === 4 ? '值得上 · 保底 4★'
+    : '没有 4★ 保底，建议刷新词条';
+
+  out.innerHTML = `
+    <div class="best">
+      <div class="best-top">
+        <span class="best-label">推荐</span>
+        <span class="star" style="color:${RCOLOR(best.floor)}">${best.floor}★</span>
+        <span style="color:var(--muted);font-size:12px">保底</span>
+      </div>
+      <div class="verdict" style="color:${best.floor>=4?'var(--ok)':'var(--warn)'}">${verdict}</div>
+      <div class="tags-inline" style="margin-top:8px">${tagHtml(best.tags)}</div>
+      <div class="ops" style="margin-top:6px">最低可出：${opsLine(best)}</div>
+      <div class="ops" style="margin-top:2px;font-size:11.5px">${meta(best)}</div>
+    </div>
+    <div class="panel">
+      <div class="grp-title">全部组合（${results.length}）</div>
+      ${results.map(r=>`
+        <div class="row">
+          <div class="rs" style="color:${RCOLOR(r.floor)}">${r.floor}★</div>
+          <div class="rc">
+            <div class="tags-inline">${tagHtml(r.tags)}</div>
+            <div class="ops">${opsLine(r)} · ${meta(r)}</div>
+          </div>
+        </div>`).join('')}
+      <div class="note" style="margin-top:10px">保底 = 这组词条至少能出的星级</div>
+    </div>`;
+}
+
+document.getElementById('clear').onclick = () => { sel.clear(); syncChips(); render(); };
+document.getElementById('demo').onclick = () => {
+  sel.clear();
+  ['高级资深干员','输出','近战位','生存','支援'].forEach(t=>{ if(sel.size<MAX) sel.add(t); });
+  syncChips(); render();
+};
+
+buildChips(); render();
+</script>
+</body>
+</html>
